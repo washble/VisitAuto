@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>네이버 카페 자동 방문 매크로</title>
+</head>
+<body>
+    <div id="list-container">
+        <form>
+            <div id="box">
+                <br><input type="button" value="추가" onclick="add_textbox()"> <-버튼을 누르고 방문할 카페 주소를 입력하세요.<br>
+            </div>
+        </form>
+        <div>
+            <button id="start" class="click" type="button">매크로시작</button>
+            <button id="stop" class="stop" type="button" style="display: none;">매크로 중지</button>
+        </div>
+    </div>
+    <div id="log"></div>
+    <script type="text/javascript">
+        const startButton = document.getElementById("start");
+        const stopButton = document.querySelector(".stop");
+        const log = document.getElementById("log");
+        
+        const add_textbox = () => {
+            const box = document.getElementById("box");
+            const newP = document.createElement('p');
+            newP.innerHTML = "<input type='text' class='Address'> <input type='button' value='삭제' onclick='remove(this)'>";
+            box.appendChild(newP);
+        }
+        const remove = (obj) => {
+            document.getElementById('box').removeChild(obj.parentNode);
+        }
+
+        
+        let list = [];   //카페 주소(URL) 배열
+        let cafes = []; // 열린 카페 창 배열
+        let count = 0;
+        let article = 1;
+        let intervalId = null; // setInterval ID 저장
+        let nextTime = 0; //다음 방문 시간
+
+        function autoF() {
+            // 다음 방문 시간 결정
+            nextTime = 1800000 + Math.random() * 99998;
+            // 다음 방문 시간 5초 테스트
+            // nextTime = 5000;
+            // 오늘의 날짜
+            const today = new Date();
+            // 다음 방문 시간 계산
+            const nextVisit = new Date(today.getTime() + nextTime);
+            
+            //임의의 게시글 index
+            let new_article = 1 + Math.floor(Math.random() * 100);
+            while(article == new_article) {
+                new_article = 1 + Math.floor(Math.random() * 100);
+            }
+            article = new_article;
+
+            let notice = "<br><br>";
+            for(let i = 0; i < list.length; i++) {
+                const cafeUrl = list[i].value;
+                // cafes[i] = window.open(`${cafeUrl}/${article}`, `cafe${i}`, '_blank');   // 새창
+                cafes[i] = window.open(`${cafeUrl}/${article}`, `cafe${i}`);   // 새탭
+                // cafes[i] = window.open(cafeUrl , `cafe${i}`);    // 카페 홈 테스트
+                (function(index) {
+                    setTimeout(function() {
+                        closeTab(index);
+                    }, 3000);
+                })(i);
+                notice += `${cafeUrl}/${article} 카페 방문 시간은 ${today.toLocaleString()}<br><br>`;
+            }
+            
+            notice += `다음 방문 시간 : ${Math.floor(nextTime / 60000)}분 ${Math.floor((nextTime % 60000) / 1000)}초 이후 => ${nextVisit.toLocaleString()}<br><br>`;
+
+            count += 1;
+            notice += `현재 ${count}번 방문 했습니다.`;
+            log.innerHTML = notice;
+
+        }
+
+        function closeTab(_idx) {
+            if (cafes[_idx] && !cafes[_idx].closed) {
+                cafes[_idx].close();
+                cafes[_idx] = null; // 열린 창 참조 해제
+            }
+        }
+        
+        startButton.addEventListener("click", function() {
+            if (!intervalId) { // interval이 이미 시작되지 않았을 경우에만 시작
+                startButton.style.display = "none";
+                stopButton.style.display = "block";
+
+                // 초기화
+                cafes = [];
+                count = 0; // 필요에 따라 초기화
+                article = 1; // 필요에 따라 초기화
+
+                list = document.getElementsByClassName('Address');
+
+                autoF(); // 첫 번째 실행
+                intervalId = setInterval(autoF, nextTime); // interval 시작
+            }
+        });
+
+        stopButton.addEventListener("click", function() {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null; // intervalId 초기화
+
+                startButton.style.display = "block";
+                stopButton.style.display = "none";
+                log.innerHTML = ''; // log 초기화
+
+                alert("매크로가 중지되었습니다.");
+            }
+        });
+
+        window.addEventListener('beforeunload', function (e) {
+            if (intervalId) {
+                clearInterval(intervalId);  // 창을 끌 때 interval 해제
+            }
+        });
+    </script>
+</body>
+</html>
