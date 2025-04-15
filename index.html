@@ -16,7 +16,7 @@
             <button id="stop" class="stop" type="button" style="display: none;">매크로 중지</button>
         </div>
     </div>
-    <div id="log"></div>
+    <div id="log" style="white-space: pre-line"></div>
     <script type="text/javascript">
         const startButton = document.getElementById("start");
         const stopButton = document.querySelector(".stop");
@@ -57,7 +57,7 @@
             }
             article = new_article;
 
-            let notice = "<br><br>";
+            let notice = "\n\n";
             for(let i = 0; i < list.length; i++) {
                 const cafeUrl = list[i].value;
                 // cafes[i] = window.open(`${cafeUrl}/${article}`, `cafe${i}`, '_blank');   // 새창
@@ -68,10 +68,10 @@
                         closeTab(index);
                     }, 3000);
                 })(i);
-                notice += `${cafeUrl}/${article} 카페 방문 시간은 ${today.toLocaleString()}<br><br>`;
+                notice += `${cafeUrl}/${article} 카페 방문 시간은 ${today.toLocaleString()}\n\n`;
             }
             
-            notice += `다음 방문 시간 : ${Math.floor(nextTime / 60000)}분 ${Math.floor((nextTime % 60000) / 1000)}초 이후 => ${nextVisit.toLocaleString()}<br><br>`;
+            notice += `다음 방문 시간 : ${Math.floor(nextTime / 60000)}분 ${Math.floor((nextTime % 60000) / 1000)}초 이후 => ${nextVisit.toLocaleString()}\n\n`;
 
             count += 1;
             notice += `현재 ${count}번 방문 했습니다.`;
