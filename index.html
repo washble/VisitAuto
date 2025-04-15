@@ -75,7 +75,7 @@
 
             count += 1;
             notice += `현재 ${count}번 방문 했습니다.`;
-            log.innerHTML = notice;
+            log.textContent = notice;
 
         }
 
@@ -110,7 +110,7 @@
 
                 startButton.style.display = "block";
                 stopButton.style.display = "none";
-                log.innerHTML = ''; // log 초기화
+                log.textContent = ''; // log 초기화
 
                 alert("매크로가 중지되었습니다.");
             }
