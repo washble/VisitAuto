@@ -31,7 +31,6 @@
         const remove = (obj) => {
             document.getElementById('box').removeChild(obj.parentNode);
         }
-
         
         let list = [];   //카페 주소(URL) 배열
         let cafes = []; // 열린 카페 창 배열
@@ -63,11 +62,7 @@
                 // cafes[i] = window.open(`${cafeUrl}/${article}`, `cafe${i}`, '_blank');   // 새창
                 cafes[i] = window.open(`${cafeUrl}/${article}`, `cafe${i}`);   // 새탭
                 // cafes[i] = window.open(cafeUrl , `cafe${i}`);    // 카페 홈 테스트
-                ((index) => {
-                    setTimeout(() => {
-                        closeTab(index);
-                    }, 3000);
-                })(i);
+                openTab(i);
                 notice += `${cafeUrl}/${article} 카페 방문 시간은 ${today.toLocaleString()}\n\n`;
             }
             
@@ -76,13 +71,18 @@
             count += 1;
             notice += `현재 ${count}번 방문 했습니다.`;
             log.textContent = notice;
+        }
 
+        openTab = (idx) => {
+            setTimeout(() => {
+                closeTab(idx);
+            }, 3000);
         }
         
-        closeTab = (_idx) => {
-            if (cafes[_idx] && !cafes[_idx].closed) {
-                cafes[_idx].close();
-                cafes[_idx] = null; // 열린 창 참조 해제
+        closeTab = (idx) => {
+            if (cafes[idx] && !cafes[idx].closed) {
+                cafes[idx].close();
+                cafes[idx] = null; // 열린 창 참조 해제
             }
         }
         
