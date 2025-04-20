@@ -40,7 +40,7 @@
         let intervalId = null; // setInterval ID 저장
         let nextTime = 0; //다음 방문 시간
 
-        function autoF() {
+        autoF = () => {
             // 다음 방문 시간 결정
             nextTime = 1800000 + Math.random() * 99998;
             // 다음 방문 시간 5초 테스트
@@ -63,8 +63,8 @@
                 // cafes[i] = window.open(`${cafeUrl}/${article}`, `cafe${i}`, '_blank');   // 새창
                 cafes[i] = window.open(`${cafeUrl}/${article}`, `cafe${i}`);   // 새탭
                 // cafes[i] = window.open(cafeUrl , `cafe${i}`);    // 카페 홈 테스트
-                (function(index) {
-                    setTimeout(function() {
+                ((index) => {
+                    setTimeout(() => {
                         closeTab(index);
                     }, 3000);
                 })(i);
@@ -78,15 +78,15 @@
             log.textContent = notice;
 
         }
-
-        function closeTab(_idx) {
+        
+        closeTab = (_idx) => {
             if (cafes[_idx] && !cafes[_idx].closed) {
                 cafes[_idx].close();
                 cafes[_idx] = null; // 열린 창 참조 해제
             }
         }
         
-        startButton.addEventListener("click", function() {
+        startButton.addEventListener("click", () => {
             if (!intervalId) { // interval이 이미 시작되지 않았을 경우에만 시작
                 startButton.style.display = "none";
                 stopButton.style.display = "block";
@@ -116,7 +116,7 @@
             }
         });
 
-        stopButton.addEventListener("click", function() {
+        stopButton.addEventListener("click", () => {
             if (intervalId) {
                 clearInterval(intervalId);
                 intervalId = null; // intervalId 초기화
@@ -129,7 +129,7 @@
             }
         });
 
-        window.addEventListener('beforeunload', function (e) {
+        window.addEventListener('beforeunload', (e) => {
             if (intervalId) {
                 clearInterval(intervalId);  // 창을 끌 때 interval 해제
             }
