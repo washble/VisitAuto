@@ -83,8 +83,8 @@
                             postMessage({ type: 'visit', cafeUrls: cafeUrls, article: article, nextTime: nextTime, count: count });
                         };
 
-                        intervalId = setInterval(autoF, nextTime);
                         autoF(); // 즉시 실행
+                        intervalId = setInterval(autoF, nextTime);
                     } else if (event.data.type === 'stop') {
                         clearInterval(intervalId);
                         self.close();
