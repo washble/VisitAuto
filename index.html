@@ -56,7 +56,6 @@
             return `
                 let intervalId = null;
                 let list = [];
-                let cafes = [];
                 let count = 0;
                 let article = 1;
                 let nextTime = 0;
@@ -73,7 +72,7 @@
                                 new_article = 1 + Math.floor(Math.random() * 100);
                             }
                             article = new_article;
-
+        
                             let cafeUrls = [];
                             for (let i = 0; i < list.length; i++) {
                                 const cafeUrl = list[i];
@@ -81,6 +80,11 @@
                             }
                             count++;
                             postMessage({ type: 'visit', cafeUrls: cafeUrls, article: article, nextTime: nextTime, count: count });
+        
+                            // 카페 창 닫기 작업을 메인 스레드에 요청
+                            setTimeout(() => {
+                                postMessage({ type: 'closeCafes' });
+                            }, 3000); // 3초 후에 카페 창 닫기
                         };
 
                         autoF(); // 즉시 실행
@@ -116,7 +120,7 @@
                     worker.onmessage = (event) => {
                         if (event.data.type === 'visit') {
                             const { cafeUrls, article, nextTime, count } = event.data;
-
+        
                             let notice = "\n\n";
                             for (let i = 0; i < cafeUrls.length; i++) {
                                 notice += `${cafeUrls[i]} 카페 방문 시간은 ${new Date().toLocaleString()}\n\n`;
@@ -127,22 +131,21 @@
                             notice += `다음 방문 시간 : ${Math.floor(nextTime / 60000)}분 ${Math.floor((nextTime % 60000) / 1000)}초 이후 => ${nextVisit.toLocaleString()}\n\n`;
                             notice += `현재 ${count}번 방문 했습니다.`;
                             log.textContent = notice;
-
-                            setTimeout(() => {
-                                for (let i = 0; i < cafes.length; i++) {
-                                    if (cafes[i] && !cafes[i].closed) {
-                                        cafes[i].close();
-                                        cafes[i] = null; // 열린 창 참조 해제
-                                    }
+                        } else if (event.data.type === 'closeCafes') {
+                            // 카페 창 닫기
+                            for (let i = 0; i < cafes.length; i++) {
+                                if (cafes[i] && !cafes[i].closed) {
+                                    cafes[i].close();
+                                    cafes[i] = null; // 열린 창 참조 해제
                                 }
-                            }, 3000);
+                            }
                         }
                     };
 
                     // 다음 방문 시간 결정
                     nextTime = 1800000 + Math.random() * 99998;
-                    // 다음 방문 시간 5초 테스트
-                    // nextTime = 5000;
+                    // 테스트 다음 방문 3초
+                    nextTime = 5000;
 
                     // Worker 시작 메시지 전송
                     worker.postMessage({
