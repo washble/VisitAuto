@@ -8,10 +8,8 @@
     <div id="list-container">
         <form>
             <div id="box">
-                <!-- 메모장 파일 불러오기 버튼 -->
                 <button type="button" onclick="loadFile()">메모장 추가</button>
                 <input type="file" id="fileInput" style="display:none;" accept=".txt" onchange="handleFile(this)">
-                <!-- 수동 주소 입력 영역 -->
                 <input type="button" value="직접 추가" onclick="add_textbox()"> ← 버튼을 누르고 방문할 카페 주소를 입력하세요.<br>
             </div>
         </form>
@@ -21,33 +19,31 @@
         </div>
     </div>
     <div id="log" style="white-space: pre-line"></div>
+
     <script type="text/javascript">
-        // DOM 요소 참조
+        const NEXT_VISIT_INTERVAL = 1800000;     // 다음 방문까지 시간 (단위: ms) 예: 30분 = 1800000ms
+        const CLOSE_INTERVAL = 3000;        // 창 닫는 시간 (단위: ms) 예: 3초 = 3000ms
+
         const startButton = document.getElementById("start");
         const stopButton = document.querySelector(".stop");
         const log = document.getElementById("log");
 
-        // 변수 초기화
-        let list = [];        // 카페 주소(URL) 배열
-        let cafes = [];       // 열린 카페 창 배열
-        let count = 0;        // 방문 횟수
-        let article = 1;      // 게시글 번호
-        let worker = null;     // Worker 객체
-        let nextTime = 0;     // 다음 방문 시간
+        let list = [];
+        let cafes = [];
+        let count = 0;
+        let article = 1;
+        let worker = null;
 
-        // UI 업데이트 함수
         const updateUI = (isRunning) => {
             startButton.style.display = isRunning ? "none" : "block";
             stopButton.style.display = isRunning ? "block" : "none";
-            log.textContent = '';  // 로그 초기화
+            log.textContent = '';
         };
 
-        // 파일 추가 버튼 클릭 시 파일 선택 창 열기
         function loadFile() {
             document.getElementById("fileInput").click();
         }
 
-        // 선택된 파일 처리
         function handleFile(input) {
             const file = input.files[0];
             if (!file) return;
@@ -55,24 +51,20 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 const content = e.target.result;
-                const links = content
-                    .split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0);
+                const links = content.split('\n').map(line => line.trim()).filter(line => line.length > 0);
 
                 const box = document.getElementById("box");
                 links.forEach(link => {
                     const newP = document.createElement('p');
-                    newP.innerHTML = "<input type='text' class='Address' value='" + link + "'> <input type='button' value='삭제' onclick='remove(this)'>";
+                    newP.innerHTML = `<input type='text' class='Address' value='${link}'> <input type='button' value='삭제' onclick='remove(this)'>`;
                     box.appendChild(newP);
                 });
 
-                input.value = ""; // 파일 선택 초기화
+                input.value = "";
             };
             reader.readAsText(file);
         }
 
-        // 카페 주소 추가 함수
         const add_textbox = () => {
             const box = document.getElementById("box");
             const newP = document.createElement('p');
@@ -80,118 +72,96 @@
             box.appendChild(newP);
         };
 
-        // 카페 주소 삭제 함수
         const remove = (obj) => {
             document.getElementById('box').removeChild(obj.parentNode);
         };
 
-        // Worker 스크립트 생성 함수
         const createWorkerScript = () => {
             return `
-                let intervalId = null;
                 let list = [];
                 let count = 0;
                 let article = 1;
-                let nextTime = 0;
+                const CLOSE_INTERVAL = ${CLOSE_INTERVAL};
+                const BASE_NEXT_TIME = ${NEXT_VISIT_INTERVAL};
+
+                const autoVisit = () => {
+                    let new_article = 1 + Math.floor(Math.random() * 100);
+                    while (article === new_article) {
+                        new_article = 1 + Math.floor(Math.random() * 100);
+                    }
+                    article = new_article;
+
+                    const RANDOM_VISIT_VARIATION = Math.floor(Math.random() * 99998); // 다음 방문까지 추가 랜덤 시간 (단위: ms)
+                    const nextTime = BASE_NEXT_TIME + RANDOM_VISIT_VARIATION;
+
+                    let cafeUrls = [];
+                    for (let i = 0; i < list.length; i++) {
+                        const cafeUrl = list[i];
+                        cafeUrls.push(\`\${cafeUrl}/\${article}\`);
+                    }
+
+                    postMessage({ type: 'visit', cafeUrls, article, nextTime, count: ++count });
+
+                    setTimeout(autoVisit, nextTime);
+                };
 
                 self.onmessage = (event) => {
                     if (event.data.type === 'start') {
                         list = event.data.list;
-                        nextTime = event.data.nextTime;
-
-                        const autoF = () => {
-                            // 임의의 게시글 index
-                            let new_article = 1 + Math.floor(Math.random() * 100);
-                            while (article == new_article) {
-                                new_article = 1 + Math.floor(Math.random() * 100);
-                            }
-                            article = new_article;
-        
-                            let cafeUrls = [];
-                            for (let i = 0; i < list.length; i++) {
-                                const cafeUrl = list[i];
-                                cafeUrls.push(\`\${cafeUrl}/\${article}\`);
-                            }
-                            count++;
-                            postMessage({ type: 'visit', cafeUrls: cafeUrls, article: article, nextTime: nextTime, count: count });
-        
-                            // 카페 창 닫기 작업을 메인 스레드에 요청
-                            setTimeout(() => {
-                                postMessage({ type: 'closeCafes' });
-                            }, 3000); // 3초 후에 카페 창 닫기
-                        };
-
-                        autoF(); // 즉시 실행
-                        intervalId = setInterval(autoF, nextTime);
+                        autoVisit();
                     } else if (event.data.type === 'stop') {
-                        clearInterval(intervalId);
                         self.close();
                     }
                 };
             `;
         };
 
-        // 매크로 시작 함수
         const startMacro = () => {
             if (!worker) {
                 updateUI(true);
-
-                // 초기화
                 cafes = [];
                 count = 0;
                 article = 1;
-
-                // 카페 주소 목록 가져오기
                 list = Array.from(document.getElementsByClassName('Address')).map(item => item.value);
 
                 try {
-                    // Worker 생성
                     const workerScript = createWorkerScript();
-                    const blob = new Blob([workerScript]);
-                    worker = new Worker(window.URL.createObjectURL(blob));
+                    const blob = new Blob([workerScript], { type: 'application/javascript' });
+                    worker = new Worker(URL.createObjectURL(blob));
 
-                    // Worker 메시지 핸들러
                     worker.onmessage = (event) => {
                         if (event.data.type === 'visit') {
                             const { cafeUrls, article, nextTime, count } = event.data;
-        
                             let notice = "\n\n";
+
                             for (let i = 0; i < cafeUrls.length; i++) {
                                 notice += `${cafeUrls[i]} 카페 방문 시간은 ${new Date().toLocaleString()}\n\n`;
-                                cafes[i] = window.open(cafeUrls[i], `cafe${i}`);
+
+                                const newWin = window.open(cafeUrls[i], `cafe${i}_${Date.now()}`);
+
+                                const closeTimer = setTimeout(() => {
+                                    if (newWin && !newWin.closed) newWin.close();
+                                }, CLOSE_INTERVAL);
+
+                                cafes.push({ window: newWin, timerId: closeTimer });
                             }
-                            const today = new Date();
-                            const nextVisit = new Date(today.getTime() + nextTime);
-                            notice += `다음 방문 시간 : ${Math.floor(nextTime / 60000)}분 ${Math.floor((nextTime % 60000) / 1000)}초 이후 => ${nextVisit.toLocaleString()}\n\n`;
+
+                            const now = new Date();
+                            const nextVisit = new Date(now.getTime() + nextTime);
+                            notice += `다음 방문까지: ${Math.floor(nextTime / 1000)}초 후 → ${nextVisit.toLocaleString()}\n\n`;
                             notice += `현재 ${count}번 방문 했습니다.`;
                             log.textContent = notice;
-                        } else if (event.data.type === 'closeCafes') {
-                            // 카페 창 닫기
-                            for (let i = 0; i < cafes.length; i++) {
-                                if (cafes[i] && !cafes[i].closed) {
-                                    cafes[i].close();
-                                    cafes[i] = null; // 열린 창 참조 해제
-                                }
-                            }
                         }
                     };
 
-                    // 다음 방문 시간 결정
-                    nextTime = 1800000 + Math.random() * 99998;
-                    // 테스트 다음 방문 3초
-                    // nextTime = 5000;
-
-                    // Worker 시작 메시지 전송
                     worker.postMessage({
                         type: 'start',
-                        list: list,
-                        nextTime: nextTime
+                        list: list
                     });
+
                 } catch (error) {
-                    console.error("setInterval 중 오류 발생:", error);
-                    if (worker) {
-                        worker.terminate();
-                    }
+                    console.error("오류 발생:", error);
+                    if (worker) worker.terminate();
                     updateUI(false);
                     worker = null;
                     alert("매크로 실행 중 오류가 발생하여 중지되었습니다.");
@@ -199,16 +169,20 @@
             }
         };
 
-        // 매크로 중지 함수
         const stopMacro = () => {
             if (worker) {
                 worker.postMessage({ type: 'stop' });
                 worker = null;
                 updateUI(false);
             }
+
+            cafes.forEach((item) => {
+                if (item?.timerId) clearTimeout(item.timerId);
+                if (item?.window && !item.window.closed) item.window.close();
+            });
+            cafes = [];
         };
 
-        // 이벤트 리스너 등록
         startButton.addEventListener("click", startMacro);
         stopButton.addEventListener("click", stopMacro);
         window.addEventListener('beforeunload', stopMacro);
