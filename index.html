@@ -148,7 +148,11 @@
 
                             const now = new Date();
                             const nextVisit = new Date(now.getTime() + nextTime);
-                            notice += `다음 방문까지: ${Math.floor(nextTime / 1000)}초 후 → ${nextVisit.toLocaleString()}\n\n`;
+                            const totalSeconds = Math.floor(nextTime / 1000);
+                            const hours = Math.floor(totalSeconds / 3600);
+                            const minutes = Math.floor((totalSeconds % 3600) / 60);
+                            const seconds = totalSeconds % 60;
+                            notice += `다음 방문 시간 : ${hours}시간 ${minutes}분 ${seconds}초 이후 => ${nextVisit.toLocaleString()}\n\n`;
                             notice += `현재 ${count}번 방문 했습니다.`;
                             log.textContent = notice;
                         }
