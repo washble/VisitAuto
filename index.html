@@ -8,7 +8,11 @@
     <div id="list-container">
         <form>
             <div id="box">
-                <br><input type="button" value="추가" onclick="add_textbox()"> <-버튼을 누르고 방문할 카페 주소를 입력하세요.<br>
+                <!-- 메모장 파일 불러오기 버튼 -->
+                <button type="button" onclick="loadFile()">메모장 추가</button>
+                <input type="file" id="fileInput" style="display:none;" accept=".txt" onchange="handleFile(this)">
+                <!-- 수동 주소 입력 영역 -->
+                <input type="button" value="직접 추가" onclick="add_textbox()"> ← 버튼을 누르고 방문할 카페 주소를 입력하세요.<br>
             </div>
         </form>
         <div>
@@ -37,6 +41,36 @@
             stopButton.style.display = isRunning ? "block" : "none";
             log.textContent = '';  // 로그 초기화
         };
+
+        // 파일 추가 버튼 클릭 시 파일 선택 창 열기
+        function loadFile() {
+            document.getElementById("fileInput").click();
+        }
+
+        // 선택된 파일 처리
+        function handleFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const links = content
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0);
+
+                const box = document.getElementById("box");
+                links.forEach(link => {
+                    const newP = document.createElement('p');
+                    newP.innerHTML = "<input type='text' class='Address' value='" + link + "'> <input type='button' value='삭제' onclick='remove(this)'>";
+                    box.appendChild(newP);
+                });
+
+                input.value = ""; // 파일 선택 초기화
+            };
+            reader.readAsText(file);
+        }
 
         // 카페 주소 추가 함수
         const add_textbox = () => {
